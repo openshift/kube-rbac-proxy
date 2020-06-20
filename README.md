@@ -63,6 +63,8 @@ Usage of _output/linux/amd64/kube-rbac-proxy:
       --upstream string                             The upstream URL to proxy to once requests have successfully been authenticated and authorized.
       --upstream-ca-file string                     The CA the upstream uses for TLS connection. This is required when the upstream uses TLS and its own CA certificate
       --upstream-force-h2c                          Force h2c to communiate with the upstream. This is required when the upstream speaks h2c(http/2 cleartext - insecure variant of http/2) only. For example, go-grpc server in the insecure mode, such as helm's tiller w/o TLS, speaks h2c only
+      --upstream-keepalive duration                 keepalive specifies the keep-alive period for an active network connection. Set to 0 to disable keepalive. (default 30s)
+      --upstream-request-timeout duration           The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default 30s)
   -v, --v Level                                     number for the log level verbosity
       --vmodule moduleSpec                          comma-separated list of pattern=N settings for file-filtered logging
 ```

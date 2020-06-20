@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-func initTransport(upstreamCAFile string) (http.RoundTripper, error) {
+func initTransport(upstreamCAFile string, upstreamRequestTimeout time.Duration, upstreamKeepalive time.Duration) (http.RoundTripper, error) {
 	if upstreamCAFile == "" {
 		return http.DefaultTransport, nil
 	}
@@ -46,8 +46,8 @@ func initTransport(upstreamCAFile string) (http.RoundTripper, error) {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:   upstreamRequestTimeout,
+			KeepAlive: upstreamKeepalive,
 			DualStack: true,
 		}).DialContext,
 		MaxIdleConns:          100,

@@ -52,14 +52,16 @@ import (
 )
 
 type config struct {
-	insecureListenAddress string
-	secureListenAddress   string
-	upstream              string
-	upstreamForceH2C      bool
-	upstreamCAFile        string
-	auth                  proxy.Config
-	tls                   tlsConfig
-	kubeconfigLocation    string
+	insecureListenAddress  string
+	secureListenAddress    string
+	upstream               string
+	upstreamForceH2C       bool
+	upstreamRequestTimeout time.Duration
+	upstreamKeepalive      time.Duration
+	upstreamCAFile         string
+	auth                   proxy.Config
+	tls                    tlsConfig
+	kubeconfigLocation     string
 }
 
 type tlsConfig struct {
@@ -113,6 +115,8 @@ func main() {
 	flagset.StringVar(&cfg.secureListenAddress, "secure-listen-address", "", "The address the kube-rbac-proxy HTTPs server should listen on.")
 	flagset.StringVar(&cfg.upstream, "upstream", "", "The upstream URL to proxy to once requests have successfully been authenticated and authorized.")
 	flagset.BoolVar(&cfg.upstreamForceH2C, "upstream-force-h2c", false, "Force h2c to communiate with the upstream. This is required when the upstream speaks h2c(http/2 cleartext - insecure variant of http/2) only. For example, go-grpc server in the insecure mode, such as helm's tiller w/o TLS, speaks h2c only")
+        flagset.DurationVar(&cfg.upstreamRequestTimeout, "upstream-request-timeout", 30 * time.Second, "The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests.")
+        flagset.DurationVar(&cfg.upstreamKeepalive, "upstream-keepalive", 30 * time.Second, "keepalive specifies the keep-alive period for an active network connection. Set to 0 to disable keepalive.")
 	flagset.StringVar(&cfg.upstreamCAFile, "upstream-ca-file", "", "The CA the upstream uses for TLS connection. This is required when the upstream uses TLS and its own CA certificate")
 	flagset.StringVar(&configFileName, "config-file", "", "Configuration file to configure kube-rbac-proxy.")
 
@@ -206,7 +210,7 @@ func main() {
 		klog.Fatalf("Failed to create rbac-proxy: %v", err)
 	}
 
-	upstreamTransport, err := initTransport(cfg.upstreamCAFile)
+	upstreamTransport, err := initTransport(cfg.upstreamCAFile, cfg.upstreamRequestTimeout, cfg.upstreamKeepalive)
 	if err != nil {
 		klog.Fatalf("Failed to set up upstream TLS connection: %v", err)
 	}
