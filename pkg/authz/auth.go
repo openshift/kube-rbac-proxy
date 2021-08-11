@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/klog/v2"
 	"time"
 
 	"k8s.io/apiserver/pkg/authorization/authorizer"
@@ -132,6 +133,7 @@ func (sa staticAuthorizer) Authorize(ctx context.Context, a authorizer.Attribute
 	// compare a against the configured static auths
 	for _, saConfig := range sa.config {
 		if saConfig.Equal(a) {
+			klog.V(2).Info("approved using static config")
 			return authorizer.DecisionAllow, "found corresponding static auth config", nil
 		}
 	}

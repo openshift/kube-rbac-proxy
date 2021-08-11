@@ -47,7 +47,6 @@ import (
 
 	"github.com/brancz/kube-rbac-proxy/pkg/authn"
 	"github.com/brancz/kube-rbac-proxy/pkg/authz"
-	"github.com/brancz/kube-rbac-proxy/pkg/hardcodedauthorizer"
 	"github.com/brancz/kube-rbac-proxy/pkg/proxy"
 	rbac_proxy_tls "github.com/brancz/kube-rbac-proxy/pkg/tls"
 )
@@ -202,7 +201,7 @@ func main() {
 		// prefix the authorizer with the permissions for metrics scraping which are well known.
 		// openshift RBAC policy will always allow this user to read metrics.
 		// TODO: remove this, once CMO lands static authorizer configuration.
-		hardcodedauthorizer.NewHardCodedMetricsAuthorizer(),
+		//hardcodedauthorizer.NewHardCodedMetricsAuthorizer(),
 		staticAuthorizer,
 		sarAuthorizer,
 	)
