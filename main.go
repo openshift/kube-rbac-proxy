@@ -48,7 +48,6 @@ import (
 
 	"github.com/brancz/kube-rbac-proxy/pkg/authn"
 	"github.com/brancz/kube-rbac-proxy/pkg/authz"
-	"github.com/brancz/kube-rbac-proxy/pkg/hardcodedauthorizer"
 	"github.com/brancz/kube-rbac-proxy/pkg/proxy"
 	rbac_proxy_tls "github.com/brancz/kube-rbac-proxy/pkg/tls"
 )
@@ -192,7 +191,6 @@ func main() {
 
 	sarClient := kubeClient.AuthorizationV1().SubjectAccessReviews()
 	sarAuthorizer, err := authz.NewSarAuthorizer(sarClient)
-
 	if err != nil {
 		klog.Fatalf("Failed to create sar authorizer: %v", err)
 	}
@@ -205,8 +203,6 @@ func main() {
 	authorizer := union.New(
 		// prefix the authorizer with the permissions for metrics scraping which are well known.
 		// openshift RBAC policy will always allow this user to read metrics.
-		// TODO: remove this, once CMO lands static authorizer configuration.
-		hardcodedauthorizer.NewHardCodedMetricsAuthorizer(),
 		staticAuthorizer,
 		sarAuthorizer,
 	)
@@ -416,14 +412,14 @@ func initKubeConfig(kcLocation string) *rest.Config {
 	if kcLocation != "" {
 		kubeConfig, err := clientcmd.BuildConfigFromFlags("", kcLocation)
 		if err != nil {
-			klog.Fatalf("unable to build rest config based on provided path to kubeconfig file: %v", err)
+			klog.Fatalf("unable to build rest config based on provided path to kubeconfig file: %v",err)
 		}
 		return kubeConfig
 	}
 
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
-		klog.Fatalf("cannot find Service Account in pod to build in-cluster rest config: %v", err)
+		klog.Fatalf("cannot find Service Account in pod to build in-cluster rest config: %v",err)
 	}
 
 	return kubeConfig
