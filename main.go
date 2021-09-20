@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 	"syscall"
 	"time"
@@ -134,7 +135,10 @@ func main() {
 	//Kubeconfig flag
 	flagset.StringVar(&cfg.kubeconfigLocation, "kubeconfig", "", "Path to a kubeconfig file, specifying how to connect to the API server. If unset, in-cluster configuration will be used")
 
-	flagset.Parse(os.Args[1:])
+	err := flagset.Parse(os.Args[1:])
+	if err != nil {
+		klog.Fatalf("Failed to parse CLI flags: %v", err)
+	}
 	kcfg := initKubeConfig(cfg.kubeconfigLocation)
 
 	upstreamURL, err := url.Parse(cfg.upstream)
@@ -191,26 +195,59 @@ func main() {
 	if err != nil {
 		klog.Fatalf("Failed to create sar authorizer: %v", err)
 	}
+
+	staticAuthorizer, err := authz.NewStaticAuthorizer(cfg.auth.Authorization.Static)
+	if err != nil {
+		klog.Fatalf("Failed to create static authorizer: %v", err)
+	}
+
 	authorizer := union.New(
 		// prefix the authorizer with the permissions for metrics scraping which are well known.
 		// openshift RBAC policy will always allow this user to read metrics.
-		// TODO: remove this, once CMO lands static authorizer configuration.
-		//hardcodedauthorizer.NewHardCodedMetricsAuthorizer(),
 		staticAuthorizer,
 		sarAuthorizer,
 	)
 
+	auth, err := proxy.New(kubeClient, cfg.auth, authorizer, authenticator)
+
 	if err != nil {
+		klog.Fatalf("Failed to create rbac-proxy: %v", err)
+	}
 
+	upstreamTransport, err := initTransport(cfg.upstreamCAFile)
+	if err != nil {
 		klog.Fatalf("Failed to set up upstream TLS connection: %v", err)
-	if len(cfg.allowPaths) > 0 && len(cfg.ignorePaths) > 0 {
+	}
 
+	if len(cfg.allowPaths) > 0 && len(cfg.ignorePaths) > 0 {
+		klog.Fatal("Cannot use --allow-paths and --ignore-paths together.")
+	}
+
+	for _, pathAllowed := range cfg.allowPaths {
+		_, err := path.Match(pathAllowed, "")
+		if err != nil {
+			klog.Fatalf("Failed to verify allow path: %s", pathAllowed)
+		}
+	}
+
+	for _, pathIgnored := range cfg.ignorePaths {
+		_, err := path.Match(pathIgnored, "")
+		if err != nil {
+			klog.Fatalf("Failed to verify ignored path: %s", pathIgnored)
+		}
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(upstreamURL)
+	proxy.Transport = upstreamTransport
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		found := len(cfg.allowPaths) == 0
-		for _, path := range cfg.allowPaths {
-			if req.URL.Path == path {
-				found = true
+		for _, pathAllowed := range cfg.allowPaths {
+			found, err = path.Match(pathAllowed, req.URL.Path)
+			if err != nil {
+				return
+			}
+			if found {
 				break
 			}
 		}
@@ -220,9 +257,12 @@ func main() {
 		}
 
 		ignorePathFound := false
-		for _, path := range cfg.ignorePaths {
-			if req.URL.Path == path {
-				ignorePathFound = true
+		for _, pathIgnored := range cfg.ignorePaths {
+			ignorePathFound, err = path.Match(pathIgnored, req.URL.Path)
+			if err != nil {
+				return
+			}
+			if ignorePathFound {
 				break
 			}
 		}
@@ -351,7 +391,7 @@ func main() {
 		}
 	}
 	{
-		sig := make(chan os.Signal)
+		sig := make(chan os.Signal, 1)
 		gr.Add(func() error {
 			signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 			<-sig
@@ -373,14 +413,14 @@ func initKubeConfig(kcLocation string) *rest.Config {
 	if kcLocation != "" {
 		kubeConfig, err := clientcmd.BuildConfigFromFlags("", kcLocation)
 		if err != nil {
-			klog.Fatalf("unable to build rest config based on provided path to kubeconfig file: %v",err)
+			klog.Fatalf("unable to build rest config based on provided path to kubeconfig file: %v", err)
 		}
 		return kubeConfig
 	}
 
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
-		klog.Fatalf("cannot find Service Account in pod to build in-cluster rest config: %v",err)
+		klog.Fatalf("cannot find Service Account in pod to build in-cluster rest config: %v", err)
 	}
 
 	return kubeConfig
