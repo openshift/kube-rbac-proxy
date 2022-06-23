@@ -270,6 +270,11 @@ func main() {
 		for _, pathAllowed := range cfg.allowPaths {
 			found, err = path.Match(pathAllowed, req.URL.Path)
 			if err != nil {
+				http.Error(
+					w,
+					http.StatusText(http.StatusInternalServerError),
+					http.StatusInternalServerError,
+				)
 				return
 			}
 			if found {
@@ -285,6 +290,11 @@ func main() {
 		for _, pathIgnored := range cfg.ignorePaths {
 			ignorePathFound, err = path.Match(pathIgnored, req.URL.Path)
 			if err != nil {
+				http.Error(
+					w,
+					http.StatusText(http.StatusInternalServerError),
+					http.StatusInternalServerError,
+				)
 				return
 			}
 			if ignorePathFound {
