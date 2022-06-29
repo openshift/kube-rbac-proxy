@@ -180,7 +180,7 @@ func main() {
 			klog.Fatalf("Failed to instantiate OIDC authenticator: %v", err)
 		}
 
-		go oidcAuthenticator.Run(ctx.Done())
+		go oidcAuthenticator.Run(ctx)
 		authenticator = oidcAuthenticator
 	} else {
 		//Use Delegating authenticator
@@ -192,7 +192,7 @@ func main() {
 			klog.Fatalf("Failed to instantiate delegating authenticator: %v", err)
 		}
 
-		go delegatingAuthenticator.Run(ctx.Done())
+		go delegatingAuthenticator.Run(ctx)
 		authenticator = delegatingAuthenticator
 	}
 
