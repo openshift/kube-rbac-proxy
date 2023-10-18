@@ -1,6 +1,16 @@
+## 0.14.4 / 2023-10-16
+
+- [ENHANCEMENT] bump golang and x/net
+
+## 0.14.3 / 2023-09-07
+
+- [BUGFIX] `--version` returns now the proper kube-rbac-proxy version
+- [ENHANCEMENT] bump dependencies
+
 ## 0.14.2 / 2023-06-05
 
 - [ENHANCEMENT] bump dependencies
+- [ENHANCEMENT] Makefile, Dockerfile to work better with different architectures
 
 ## 0.14.1 / 2023-04-06
 
