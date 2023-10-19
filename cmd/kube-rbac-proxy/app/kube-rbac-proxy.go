@@ -142,6 +142,8 @@ type completedProxyRunOptions struct {
 
 	allowPaths  []string
 	ignorePaths []string
+
+	enableHTTP2 bool
 }
 
 func (o *completedProxyRunOptions) Validate() []error {
@@ -310,6 +312,8 @@ func Run(cfg *completedProxyRunOptions) error {
 	proxy := httputil.NewSingleHostReverseProxy(cfg.upstreamURL)
 	proxy.Transport = upstreamTransport
 
+	// HTTP/2 is temporarily disabled due to CVE-2023-44487
+	// Should only affectd upstream transport.
 	if cfg.upstreamForceH2C {
 		// Force http/2 for connections to the upstream i.e. do not start with HTTP1.1 UPGRADE req to
 		// initialize http/2 session.
@@ -362,7 +366,10 @@ func Run(cfg *completedProxyRunOptions) error {
 	var gr run.Group
 	{
 		if cfg.secureListenAddress != "" {
-			srv := &http.Server{Handler: mux, TLSConfig: &tls.Config{}}
+			srv := &http.Server{
+				Handler:   mux,
+				TLSConfig: &tls.Config{},
+			}
 
 			if cfg.tls.CertFile == "" && cfg.tls.KeyFile == "" {
 				klog.Info("Generating self signed cert as no cert is provided")
@@ -411,8 +418,22 @@ func Run(cfg *completedProxyRunOptions) error {
 			srv.TLSConfig.MinVersion = version
 			srv.TLSConfig.ClientAuth = tls.RequestClientCert
 
-			if err := http2.ConfigureServer(srv, nil); err != nil {
-				return fmt.Errorf("failed to configure http2 server: %w", err)
+			// HTTP/2 is temporarily disabled due to CVE-2023-44487
+			// cfg.enableHTTP2 is currently set to false in all cases.
+			if cfg.enableHTTP2 { // is set to
+				if err := http2.ConfigureServer(srv, nil); err != nil {
+					return fmt.Errorf("failed to configure http2 server: %w", err)
+				}
+			} else {
+				// HTTP/2 is temporarily disabled due to CVE-2023-44487
+				// Programs that must disable HTTP/2 can do so by setting
+				// Transport.TLSNextProto (for clients) or Server.TLSNextProto
+				// (for servers) to a non-nil, empty map.
+				// https://pkg.go.dev/net/http
+				srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
+				// For reference:
+				// https://github.com/kubernetes/kubernetes/blob/de054fbf9422d778568946de21a48c7330a6c1b7/staging/src/k8s.io/apiserver/pkg/server/secure_serving.go#L55-L59
+				srv.TLSConfig.NextProtos = []string{"http/1.1"}
 			}
 
 			gr.Add(func() error {
@@ -441,8 +462,19 @@ func Run(cfg *completedProxyRunOptions) error {
 					TLSConfig: srv.TLSConfig.Clone(),
 				}
 
-				if err := http2.ConfigureServer(proxyEndpointsSrv, nil); err != nil {
-					return fmt.Errorf("failed to configure http2 server: %w", err)
+				// HTTP/2 is temporarily disabled due to CVE-2023-44487
+				// cfg.enableHTTP2 is currently set to false in all cases.
+				if cfg.enableHTTP2 {
+					if err := http2.ConfigureServer(proxyEndpointsSrv, nil); err != nil {
+						return fmt.Errorf("failed to configure http2 server: %w", err)
+					}
+				} else {
+					// HTTP/2 is temporarily disabled due to CVE-2023-44487
+					// Programs that must disable HTTP/2 can do so by setting
+					// Transport.TLSNextProto (for clients) or Server.TLSNextProto
+					// (for servers) to a non-nil, empty map.
+					// https://pkg.go.dev/net/http
+					proxyEndpointsSrv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 				}
 
 				gr.Add(func() error {
@@ -472,7 +504,13 @@ func Run(cfg *completedProxyRunOptions) error {
 	}
 	{
 		if cfg.insecureListenAddress != "" {
-			srv := &http.Server{Handler: h2c.NewHandler(mux, &http2.Server{})}
+			srv := &http.Server{}
+
+			if cfg.enableHTTP2 {
+				srv.Handler = h2c.NewHandler(mux, &http2.Server{})
+			} else {
+				srv.Handler = mux
+			}
 
 			l, err := net.Listen("tcp", cfg.insecureListenAddress)
 			if err != nil {
