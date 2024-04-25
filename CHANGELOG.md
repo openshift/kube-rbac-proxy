@@ -1,3 +1,13 @@
+## 0.17.0 / 2024-02-08
+
+- [ENHANCEMENT] add command-line args --kube-api-qps/--kube-api-burst
+- [ENHANCEMENT] Bump deps
+
+## 0.16.0 / 2024-02-08
+
+- [ENHANCEMENT] Bump dependencies and in particular to kubernetes to v1.28
+- [CHANGE] Due to the bump to k8s v1.28 some logging flags are disabled
+
 ## 0.15.0 / 2023-10-20
 
 - [ENHANCEMENT] bump opentelemetry to fix CVE
