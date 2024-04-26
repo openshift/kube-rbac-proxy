@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dex
+  namespace: default
+data:
+  config.yaml: |
+    issuer: http://127.0.0.1:5556/dex
+
+    storage:
+      type: sqlite3
+      config:
+        file: /tmp/dex.db
+
+    web:
+      http: 127.0.0.1:5556
+
+    staticClients:
+      - id: example-app
+        redirectURIs:
+          - 'http://127.0.0.1:5555/callback'
+        name: 'Example App'
+        secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+
+    enablePasswordDB: true
+    staticPasswords:
+      - email: "admin@example.com"
+        hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W" # password
+        username: "admin"
+        userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+
+    oauth:
+      skipApprovalScreen: true
