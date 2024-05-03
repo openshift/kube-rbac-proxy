@@ -208,6 +208,10 @@ func Complete(o *options.ProxyRunOptions) (*completedProxyRunOptions, error) {
 }
 
 func Run(cfg *completedProxyRunOptions) error {
+	// <Debug - remove me asap>
+	klog.SetLogger(klog.NewKlogr().V(10))
+	// </Debug - remove me asap>
+
 	var authenticator authenticator.Request
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -202,6 +202,9 @@ func (c *DynamicFileCAContent) watchCAFile(stopCh <-chan struct{}) error {
 
 // handleWatchEvent triggers reloading the CA file, and restarts a new watch if it's a Remove or Rename event.
 func (c *DynamicFileCAContent) handleWatchEvent(e fsnotify.Event, w *fsnotify.Watcher) error {
+	// Log the event details
+	klog.InfoS("Received file watch event", "event", e.String(), "file", e.Name, "operation", e.Op.String())
+
 	// This should be executed after restarting the watch (if applicable) to ensure no file event will be missing.
 	defer c.queue.Add(workItemKey)
 	if !e.Has(fsnotify.Remove) && !e.Has(fsnotify.Rename) {
