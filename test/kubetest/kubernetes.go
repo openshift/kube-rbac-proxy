@@ -85,12 +85,33 @@ func CreatedManifests(client kubernetes.Interface, paths ...string) Action {
 				if err := createConfigmap(client, ctx, content); err != nil {
 					return err
 				}
+			case "namespace":
+				if err := createNamespace(client, ctx, content); err != nil {
+					return err
+				}
 			default:
 				return fmt.Errorf("unable to unmarshal manifest with unknown kind: %s", kind)
 			}
 		}
 		return nil
 	}
+}
+
+func createNamespace(client kubernetes.Interface, ctx *ScenarioContext, content []byte) error {
+	r := bytes.NewReader(content)
+
+	var ns *corev1.Namespace
+	if err := kubeyaml.NewYAMLOrJSONDecoder(r, r.Len()).Decode(&ns); err != nil {
+		return err
+	}
+
+	_, err := client.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+
+	ctx.AddCleanUp(func() error {
+		return client.CoreV1().Namespaces().Delete(context.TODO(), ns.Name, metav1.DeleteOptions{})
+	})
+
+	return err
 }
 
 func createClusterRole(client kubernetes.Interface, ctx *ScenarioContext, content []byte) error {
