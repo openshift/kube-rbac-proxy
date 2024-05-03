@@ -37,6 +37,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/oklog/run"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
@@ -82,17 +83,27 @@ that can perform RBAC authorization against the Kubernetes API using SubjectAcce
 
 			fs := cmd.Flags()
 
-			k8sapiflag.PrintFlags(fs)
+			fs.VisitAll(func(flag *pflag.Flag) {
+				klog.InfoS("FLAG", "name", flag.Name, "value", flag.Value)
+			})
+
+			// <Debug - remove me asap>
+			klog.SetLogger(klog.NewKlogr().V(10))
+			// </Debug - remove me asap>
 
 			if err := o.Validate(); err != nil {
 				return err
 			}
+
+			klog.InfoS("Running with options", "options", o)
 
 			// set default options
 			completedOptions, err := Complete(o)
 			if err != nil {
 				return err
 			}
+
+			klog.InfoS("Running with completed options", "options", completedOptions)
 
 			return Run(completedOptions)
 		},
@@ -208,9 +219,6 @@ func Complete(o *options.ProxyRunOptions) (*completedProxyRunOptions, error) {
 }
 
 func Run(cfg *completedProxyRunOptions) error {
-	// <Debug - remove me asap>
-	klog.SetLogger(klog.NewKlogr().V(10))
-	// </Debug - remove me asap>
 
 	var authenticator authenticator.Request
 	ctx, cancel := context.WithCancel(context.Background())
