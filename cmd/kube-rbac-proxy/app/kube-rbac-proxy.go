@@ -87,10 +87,6 @@ that can perform RBAC authorization against the Kubernetes API using SubjectAcce
 				klog.InfoS("FLAG", "name", flag.Name, "value", flag.Value)
 			})
 
-			// <Debug - remove me asap>
-			klog.SetLogger(klog.NewKlogr().V(10))
-			// </Debug - remove me asap>
-
 			if err := o.Validate(); err != nil {
 				return err
 			}
@@ -219,6 +215,7 @@ func Complete(o *options.ProxyRunOptions) (*completedProxyRunOptions, error) {
 }
 
 func Run(cfg *completedProxyRunOptions) error {
+	klog.Info("01")
 
 	var authenticator authenticator.Request
 	ctx, cancel := context.WithCancel(context.Background())
@@ -247,6 +244,7 @@ func Run(cfg *completedProxyRunOptions) error {
 		authenticator = delegatingAuthenticator
 	}
 
+	klog.Info("02")
 	sarClient := cfg.kubeClient.AuthorizationV1()
 	sarAuthorizer, err := authz.NewSarAuthorizer(sarClient)
 	if err != nil {
@@ -267,6 +265,7 @@ func Run(cfg *completedProxyRunOptions) error {
 		sarAuthorizer,
 	)
 
+	klog.Info("03")
 	upstreamTransport, err := initTransport(cfg.upstreamCABundle, cfg.tls.UpstreamClientCertFile, cfg.tls.UpstreamClientKeyFile)
 	if err != nil {
 		return fmt.Errorf("failed to set up upstream TLS connection: %w", err)
@@ -290,6 +289,7 @@ func Run(cfg *completedProxyRunOptions) error {
 		}
 	}
 
+	klog.Info("04")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ignorePathFound := false
 		for _, pathIgnored := range cfg.ignorePaths {
@@ -324,6 +324,7 @@ func Run(cfg *completedProxyRunOptions) error {
 	mux := http.NewServeMux()
 	mux.Handle("/", handler)
 
+	klog.Info("05")
 	var gr run.Group
 	{
 		if cfg.secureListenAddress != "" {
