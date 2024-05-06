@@ -37,6 +37,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/oklog/run"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
@@ -83,7 +84,9 @@ that can perform RBAC authorization against the Kubernetes API using SubjectAcce
 
 			fs := cmd.Flags()
 
-			k8sapiflag.PrintFlags(fs)
+			fs.VisitAll(func(flag *pflag.Flag) {
+				klog.InfoS("FLAG", "name", flag.Name, "value", flag.Value)
+			})
 
 			// set default options
 			completedOptions, err := Complete(o)
