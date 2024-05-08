@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/features"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
-	"k8s.io/apiserver/pkg/storage/value"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/klog/v2"
 )
@@ -115,8 +114,6 @@ type groupResourceOverrides struct {
 	// decoderDecoratorFn is optional and may wrap the provided decoders (can add new decoders). The order of
 	// returned decoders will be priority for attempt to decode.
 	decoderDecoratorFn func([]runtime.Decoder) []runtime.Decoder
-	// transformer is optional and shall encrypt that resource at rest.
-	transformer value.Transformer
 	// disablePaging will prevent paging on the provided resource.
 	disablePaging bool
 }
@@ -141,9 +138,6 @@ func (o groupResourceOverrides) Apply(config *storagebackend.Config, options *St
 	}
 	if o.decoderDecoratorFn != nil {
 		options.DecoderDecoratorFn = o.decoderDecoratorFn
-	}
-	if o.transformer != nil {
-		config.Transformer = o.transformer
 	}
 	if o.disablePaging {
 		config.Paging = false
@@ -210,12 +204,6 @@ func (s *DefaultStorageFactory) SetSerializer(groupResource schema.GroupResource
 	overrides := s.Overrides[groupResource]
 	overrides.mediaType = mediaType
 	overrides.serializer = serializer
-	s.Overrides[groupResource] = overrides
-}
-
-func (s *DefaultStorageFactory) SetTransformer(groupResource schema.GroupResource, transformer value.Transformer) {
-	overrides := s.Overrides[groupResource]
-	overrides.transformer = transformer
 	s.Overrides[groupResource] = overrides
 }
 
@@ -303,28 +291,17 @@ func Configs(storageConfig storagebackend.Config) []storagebackend.Config {
 
 // Returns all storage configurations including those for group resource overrides
 func configs(storageConfig storagebackend.Config, grOverrides map[schema.GroupResource]groupResourceOverrides) []storagebackend.Config {
-	locations := sets.NewString()
-	configs := []storagebackend.Config{}
-	for _, loc := range storageConfig.Transport.ServerList {
-		// copy
-		newConfig := storageConfig
-		newConfig.Transport.ServerList = []string{loc}
-		configs = append(configs, newConfig)
-		locations.Insert(loc)
-	}
+	configs := []storagebackend.Config{storageConfig}
 
 	for _, override := range grOverrides {
-		for _, loc := range override.etcdLocation {
-			if locations.Has(loc) {
-				continue
-			}
-			// copy
-			newConfig := storageConfig
-			override.Apply(&newConfig, &StorageCodecConfig{})
-			newConfig.Transport.ServerList = []string{loc}
-			configs = append(configs, newConfig)
-			locations.Insert(loc)
+		if len(override.etcdLocation) == 0 {
+			continue
 		}
+		// copy
+		newConfig := storageConfig
+		override.Apply(&newConfig, &StorageCodecConfig{})
+		newConfig.Transport.ServerList = override.etcdLocation
+		configs = append(configs, newConfig)
 	}
 	return configs
 }
@@ -375,7 +352,7 @@ func backends(storageConfig storagebackend.Config, grOverrides map[schema.GroupR
 		backends = append(backends, Backend{
 			Server: server,
 			// We can't share TLSConfig across different backends to avoid races.
-			// For more details see: http://pr.k8s.io/59338
+			// For more details see: https://pr.k8s.io/59338
 			TLSConfig: tlsConfig.Clone(),
 		})
 	}

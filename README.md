@@ -67,6 +67,8 @@ Kube-rbac-proxy flags:
       --http2-max-size uint32                       The maximum number of bytes that the server will accept for frame size and buffer per stream in a HTTP/2 request. (default 262144)
       --ignore-paths strings                        Comma-separated list of paths against which kube-rbac-proxy pattern-matches the incoming request. If the requst matches, it will proxy the request without performing an authentication or authorization check. Cannot be used with --allow-paths.
       --insecure-listen-address string              [DEPRECATED] The address the kube-rbac-proxy HTTP server should listen on.
+      --kube-api-burst int                          kube-api burst value; needed when kube-api-qps is set
+      --kube-api-qps float32                        queries per second to the api, kube-client starts client-side throttling, when breached
       --kubeconfig string                           Path to a kubeconfig file, specifying how to connect to the API server. If unset, in-cluster configuration will be used
       --oidc-ca-file string                         If set, the OpenID server's certificate will be verified by one of the authorities in the oidc-ca-file, otherwise the host's root CA set will be used.
       --oidc-clientID string                        The client ID for the OpenID Connect client, must be set if oidc-issuer-url is set.
@@ -90,19 +92,8 @@ Kube-rbac-proxy flags:
 
 Global flags:
 
-      --add-dir-header                   If true, adds the file directory to the header of the log messages (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true) (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-  -h, --help                             help for kube-rbac-proxy
-      --log-backtrace-at traceLocation   when logging hits line file:N, emit a stack trace (default :0) (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --log-dir string                   If non-empty, write log files in this directory (no effect when -logtostderr=true) (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --log-file string                  If non-empty, use this log file (no effect when -logtostderr=true) (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --log-file-max-size uint           Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800) (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --logtostderr                      log to standard error instead of files (default true) (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --one-output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true) (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --skip-headers                     If true, avoid header prefixes in the log messages (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --skip-log-headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true) (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2) (DEPRECATED: will be removed in a future release, see https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/2845-deprecate-klog-specific-flags-in-k8s-components)
-      --version version[=true]           Print version information and quit
+  -h, --help                     help for kube-rbac-proxy
+      --version version[=true]   --version, --version=raw prints version information and quits; --version=vX.Y.Z... sets the reported version
 ```
 
 
