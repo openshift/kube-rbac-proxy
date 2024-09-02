@@ -1,3 +1,12 @@
+## 0.18.1 / 2024-06-05
+
+- [ENHANCEMENT] Bump deps, in particular go-jose and golang (->CVE) and k8s (v1.31)
+
+## 0.18.0 / 2024-06-05
+
+- [ENHANCEMENT] Bump deps, in particular otel (>CVE) and k8s (v1.30)
+- [ENHANCEMENT] Add OIDC username prefix, which was missing
+
 ## 0.17.1 / 2024-05-07
 
 - [BUGFIX] make deprecated (usptream removed) flags behave like before
