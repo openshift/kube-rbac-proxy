@@ -1,20 +1,18 @@
-component: "Monitoring"
-
 reviewers:
 - stlaz
 - s-urbaniak
-- sttts
 - deads2k
 - ibihim
+- liouk
 
 approvers:
 - stlaz
 - s-urbaniak
-- sttts
 - deads2k
 - ibihim
 
 emeritus_approvers:
+- sttts
 - elad661
 - ironcladlou
 - squat
