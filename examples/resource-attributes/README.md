@@ -95,7 +95,7 @@ spec:
       serviceAccountName: kube-rbac-proxy
       containers:
       - name: kube-rbac-proxy
-        image: quay.io/brancz/kube-rbac-proxy:v0.18.1
+        image: quay.io/brancz/kube-rbac-proxy:v0.18.2
         args:
         - "--secure-listen-address=0.0.0.0:8443"
         - "--upstream=http://127.0.0.1:8081/"
@@ -111,7 +111,7 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
       - name: prometheus-example-app
-        image: quay.io/brancz/prometheus-example-app:v0.1.0
+        image: quay.io/brancz/prometheus-example-app:v0.5.0
         args:
         - "--bind=127.0.0.1:8081"
       volumes:
