@@ -7,6 +7,9 @@ Release shepherds are chosen on a voluntary basis.
 
 | release series | date of release (year-month-day) | release shepherd                        |
 | -------------- | -------------------------------- | --------------------------------------- |
+| v0.22.1        | 2026-07-08                       | Krzysztof Ostrowski (GitHub: @ibihim)   |
+| v0.22.0        | 2026-04-27                       | Sergiusz Urbaniak (GitHub: @s-urbaniak) |
+| v0.21.2        | 2026-03-19                       | Krzysztof Ostrowski (GitHub: @ibihim)   |
 | v0.21.1        | 2026-03-15                       | Krzysztof Ostrowski (GitHub: @ibihim)   |
 | v0.21.0        | 2026-02-26                       | Krzysztof Ostrowski (GitHub: @ibihim)   |
 | v0.20.2        | 2026-01-12                       | Krzysztof Ostrowski (GitHub: @ibihim)   |
@@ -54,6 +57,11 @@ We maintain a separate branch for each minor release, named `release-<major>.<mi
 
 Note that branch protection kicks in automatically for any branches whose name starts with `release-`. Never use names starting with `release-` for branches that are not release branches.
 
+Kubernetes minor version bumps should be released as kube-rbac-proxy minor
+releases, as they may change behavior towards Kubernetes. Patch releases should
+be reserved for maintenance-only changes, bug fixes, and dependency updates that
+do not include a Kubernetes minor version bump.
+
 The usual flow is to merge new features and changes into the master branch and
 to merge bug fixes into the latest release branch. Bug fixes are then merged
 into main from the latest release branch. The main branch should always contain
@@ -86,6 +94,9 @@ make update-go-deps
 git add go.mod go.sum
 git commit -m "Update dependencies"
 ```
+
+Remember to also replace the golang dependencies in the GitHub workflow
+configurations in `.github/workflows`.
 
 ### 2. Prepare your release
 
