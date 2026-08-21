@@ -4,6 +4,8 @@ GO111MODULE=on
 export GO111MODULE
 
 PROGRAM_NAME?=kube-rbac-proxy
+# This repository moved to github.com/kube-rbac-proxy/kube-rbac-proxy.
+# Keep the old module path until the 1.0 release, where this is subject to change.
 GITHUB_URL=github.com/brancz/kube-rbac-proxy
 GOOS?=$(shell uname -s | tr A-Z a-z)
 GOARCH?=$(shell go env GOARCH)
@@ -81,6 +83,9 @@ push: crossbuild manifest-tool $(addprefix push-,$(ALL_ARCH)) manifest-push
 curl-container:
 	docker build -f ./examples/example-client/Dockerfile -t quay.io/brancz/krp-curl:v0.0.2 .
 
+curl-container-multi:
+	docker buildx build --platform linux/amd64,linux/arm64 -f ./examples/example-client/Dockerfile -t quay.io/brancz/krp-curl:v0.0.2 .
+
 run-curl-container:
 	@echo 'Example: curl -v -s -k -H "Authorization: Bearer `cat /var/run/secrets/kubernetes.io/serviceaccount/token`" https://kube-rbac-proxy.default.svc:8443/metrics'
 	kubectl run -i -t krp-curl --image=quay.io/brancz/krp-curl:v0.0.2 --restart=Never --command -- /bin/sh
@@ -107,9 +112,9 @@ test-local: test-local-setup test
 kind-delete-cluster:
 	kind delete cluster
 
-kind-create-cluster: kind-delete-cluster
+kind-create-cluster: curl-container kind-delete-cluster
 	kind create cluster --config ./test/e2e/kind-config/kind-config.yaml
-	kind load docker-image $(CONTAINER_NAME)
+	kind load docker-image $(CONTAINER_NAME) quay.io/brancz/krp-curl:v0.0.2
 
 generate: build $(EMBEDMD_BINARY)
 	@echo ">> generating examples"
