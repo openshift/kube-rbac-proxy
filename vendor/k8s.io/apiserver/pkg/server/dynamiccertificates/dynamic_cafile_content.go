@@ -164,6 +164,13 @@ func (c *DynamicFileCAContent) Run(ctx context.Context, workers int) {
 	// doesn't matter what workers say, only start one.
 	go wait.Until(c.runWorker, time.Second, ctx.Done())
 
+	// Reload the client CA on a timer. MCO replaces kubelet-ca.crt with a new
+	// inode, so a filesystem watch on the old inode never fires and scrapes
+	// keep failing with HTTP 401 until the process restarts.
+	go wait.Until(func() {
+		c.queue.Add(workItemKey)
+	}, FileRefreshDuration, ctx.Done())
+
 	// start the loop that watches the CA file until stopCh is closed.
 	go wait.Until(func() {
 		if err := c.watchCAFile(ctx.Done()); err != nil {
