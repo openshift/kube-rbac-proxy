@@ -138,6 +138,11 @@ func (c *DynamicCertKeyPairContent) Run(ctx context.Context, workers int) {
 	// doesn't matter what workers say, only start one.
 	go wait.Until(c.runWorker, time.Second, ctx.Done())
 
+	// Reload cert/key files on a timer. Same inode-replace case as the client CA.
+	go wait.Until(func() {
+		c.queue.Add(workItemKey)
+	}, FileRefreshDuration, ctx.Done())
+
 	// start the loop that watches the cert and key files until stopCh is closed.
 	go wait.Until(func() {
 		if err := c.watchCertKeyFile(ctx.Done()); err != nil {
