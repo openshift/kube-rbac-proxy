@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/ghodss/yaml v1.0.0
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/oklog/run v1.1.0
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.29.0
@@ -79,12 +79,12 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.0 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/term v0.24.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21 // indirect
@@ -107,3 +107,5 @@ replace (
 	go.etcd.io/etcd/client/v3 => go.etcd.io/etcd/client/v3 v3.5.9 // indirect
 	go.opentelemetry.io/contrib/instrumentation => go.opentelemetry.io/contrib/instrumentation v0.44.0
 )
+
+replace golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.4
