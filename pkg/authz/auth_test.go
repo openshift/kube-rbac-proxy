@@ -18,6 +18,7 @@ package authz
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -147,13 +148,31 @@ func TestStaticAuthorizer(t *testing.T) {
 				if decision, _, _ := auth.Authorize(context.Background(), attr); decision != authorizer.DecisionAllow {
 					t.Errorf("incorrectly restricted %v", attr)
 				}
+				if decision := auth.ConditionsAwareAuthorize(context.Background(), attr); !decision.IsAllow() {
+					t.Errorf("incorrectly restricted by ConditionsAwareAuthorize %v", attr)
+				}
 			}
 
 			for _, attr := range tt.shouldNoOpinion {
 				if decision, _, _ := auth.Authorize(context.Background(), attr); decision != authorizer.DecisionNoOpinion {
 					t.Errorf("incorrectly opinionated %v", attr)
 				}
+				if decision := auth.ConditionsAwareAuthorize(context.Background(), attr); !decision.IsNoOpinion() {
+					t.Errorf("incorrectly opinionated by ConditionsAwareAuthorize %v", attr)
+				}
 			}
 		})
+	}
+}
+
+func TestStaticAuthorizerEvaluateConditions(t *testing.T) {
+	auth, err := NewStaticAuthorizer(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	decision, _, err := auth.EvaluateConditions(context.Background(), authorizer.ConditionsAwareDecision{}, nil)
+	if decision != authorizer.DecisionDeny || !errors.Is(err, authorizer.ErrorConditionEvaluationNotSupported) {
+		t.Errorf("want: %v, %v\nhave: %v, %v", authorizer.DecisionDeny, authorizer.ErrorConditionEvaluationNotSupported, decision, err)
 	}
 }

@@ -52,6 +52,16 @@ func (metricsAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes)
 	return authorizer.DecisionNoOpinion, "", nil
 }
 
+// ConditionsAwareAuthorize is not conditions-aware, converts the Authorize decision.
+func (m metricsAuthorizer) ConditionsAwareAuthorize(ctx context.Context, a authorizer.Attributes) authorizer.ConditionsAwareDecision {
+	return authorizer.ConditionsAwareDecisionFromParts(m.Authorize(ctx, a))
+}
+
+// EvaluateConditions is not supported by this authorizer.
+func (metricsAuthorizer) EvaluateConditions(_ context.Context, _ authorizer.ConditionsAwareDecision, _ authorizer.ConditionsData) (authorizer.Decision, string, error) {
+	return authorizer.DecisionDeny, "", authorizer.ErrorConditionEvaluationNotSupported
+}
+
 // NewHardCodedMetricsAuthorizer returns a hardcoded authorizer for checking metrics.
 func NewHardCodedMetricsAuthorizer() *metricsAuthorizer {
 	return new(metricsAuthorizer)

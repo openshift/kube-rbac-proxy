@@ -143,6 +143,16 @@ func (sa staticAuthorizer) Authorize(ctx context.Context, a authorizer.Attribute
 	return authorizer.DecisionNoOpinion, "", nil
 }
 
+// ConditionsAwareAuthorize is not conditions-aware, converts the Authorize decision.
+func (sa staticAuthorizer) ConditionsAwareAuthorize(ctx context.Context, a authorizer.Attributes) authorizer.ConditionsAwareDecision {
+	return authorizer.ConditionsAwareDecisionFromParts(sa.Authorize(ctx, a))
+}
+
+// EvaluateConditions is not supported by this authorizer.
+func (staticAuthorizer) EvaluateConditions(_ context.Context, _ authorizer.ConditionsAwareDecision, _ authorizer.ConditionsData) (authorizer.Decision, string, error) {
+	return authorizer.DecisionDeny, "", authorizer.ErrorConditionEvaluationNotSupported
+}
+
 func NewStaticAuthorizer(config []StaticAuthorizationConfig) (*staticAuthorizer, error) {
 	for _, c := range config {
 		if c.ResourceRequest != (c.Path == "") {

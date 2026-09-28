@@ -16,6 +16,7 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/brancz/kube-rbac-proxy/test/kubetest"
@@ -24,16 +25,20 @@ import (
 
 func testHTTP2(client kubernetes.Interface) kubetest.TestSuite {
 	return func(t *testing.T) {
-		command := `HTTP_VERSION=$(curl -sI --http2 --connect-timeout 5 -k --fail -w "%{http_version}\n" -o /dev/null https://kube-rbac-proxy.default.svc.cluster.local:8443/metrics); if [[ "$HTTP_VERSION" != "2" ]]; then echo "Did expect HTTP/2. Actual protocol: $HTTP_VERSION" > /proc/self/fd/2; exit 1; fi`
+		command := `HTTP_VERSION=$(curl -sI --http2 --connect-timeout 5 -k --fail -w "%%{http_version}\n" -o /dev/null https://kube-rbac-proxy.default.svc.cluster.local:%d%s); if [[ "$HTTP_VERSION" != "2" ]]; then echo "Did expect HTTP/2. Actual protocol: $HTTP_VERSION" > /proc/self/fd/2; exit 1; fi`
 
 		kubetest.Scenario{
 			Name: "With succeeding HTTP2-client",
 			Description: `
-				Expecting http/2 capable client to succeed to connect with http/2.
+				Expecting http/2 capable client to succeed to connect with http/2
+				on the secure port and on the proxy endpoints port.
 			`,
 
 			Given: kubetest.Actions(kubetest.NewBasicKubeRBACProxyTestConfig().
-				UpdateFlags(map[string]string{"ignore-paths": "/metrics,/api/v1/*"}).
+				UpdateFlags(map[string]string{
+					"ignore-paths":         "/metrics,/api/v1/*",
+					"proxy-endpoints-port": "10443",
+				}).
 				Launch(client),
 			),
 			When: kubetest.Actions(
@@ -50,7 +55,12 @@ func testHTTP2(client kubernetes.Interface) kubetest.TestSuite {
 			Then: kubetest.Actions(
 				kubetest.ClientSucceeds(
 					client,
-					command,
+					fmt.Sprintf(command, 8443, "/metrics"),
+					nil,
+				),
+				kubetest.ClientSucceeds(
+					client,
+					fmt.Sprintf(command, 10443, "/healthz"),
 					nil,
 				),
 			),
@@ -83,7 +93,7 @@ func testHTTP2(client kubernetes.Interface) kubetest.TestSuite {
 			Then: kubetest.Actions(
 				kubetest.ClientFails(
 					client,
-					command,
+					fmt.Sprintf(command, 8443, "/metrics"),
 					nil,
 				),
 			),

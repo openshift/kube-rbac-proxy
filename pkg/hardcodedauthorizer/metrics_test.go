@@ -18,6 +18,7 @@ package hardcodedauthorizer
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -55,13 +56,26 @@ func TestAuthorizer(t *testing.T) {
 				if decision, _, _ := tt.authorizer.Authorize(context.Background(), attr); decision != authorizer.DecisionAllow {
 					t.Errorf("incorrectly restricted %v", attr)
 				}
+				if decision := tt.authorizer.ConditionsAwareAuthorize(context.Background(), attr); !decision.IsAllow() {
+					t.Errorf("incorrectly restricted by ConditionsAwareAuthorize %v", attr)
+				}
 			}
 
 			for _, attr := range tt.shouldNoOpinion {
 				if decision, _, _ := tt.authorizer.Authorize(context.Background(), attr); decision != authorizer.DecisionNoOpinion {
 					t.Errorf("incorrectly opinionated %v", attr)
 				}
+				if decision := tt.authorizer.ConditionsAwareAuthorize(context.Background(), attr); !decision.IsNoOpinion() {
+					t.Errorf("incorrectly opinionated by ConditionsAwareAuthorize %v", attr)
+				}
 			}
 		})
+	}
+}
+
+func TestAuthorizerEvaluateConditions(t *testing.T) {
+	decision, _, err := NewHardCodedMetricsAuthorizer().EvaluateConditions(context.Background(), authorizer.ConditionsAwareDecision{}, nil)
+	if decision != authorizer.DecisionDeny || !errors.Is(err, authorizer.ErrorConditionEvaluationNotSupported) {
+		t.Errorf("want: %v, %v\nhave: %v, %v", authorizer.DecisionDeny, authorizer.ErrorConditionEvaluationNotSupported, decision, err)
 	}
 }

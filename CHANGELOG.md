@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.23.0 / 2026-09-23
+
+- [FEATURE] Add `--tls-curve-preferences` to restrict the TLS key exchange mechanisms (curves) the server accepts; values are numeric Go `tls.CurveID`s
+- [ENHANCEMENT] Bump dependencies
+- [ENHANCEMENT] Update Kubernetes dependencies to 1.37
+- [ENHANCEMENT] Strip debug symbols from binaries, reducing their size by about 32%
+- [BUGFIX] Update Go to 1.27.1 (fixes 6 reachable stdlib vulnerabilities: GO-2026-6089 net/http ReadHeaderTimeout on unencrypted HTTP/2 check, GO-2026-6090 crypto/tls post-handshake message limit, GO-2026-6091 html/template JS regexp context tracking, GO-2026-6218 net/url quadratic path resolution, GO-2026-5972 encoding/asn1 recursion depth, GO-2026-5026 IDNA Punycode validation in net/http)
+- [BUGFIX] Update google.golang.org/grpc to v1.83.2 (fixes GO-2026-6348 HTTP/2 DATA frame memory exhaustion, GO-2026-6061)
+- [BUGFIX] Update golang.org/x/text to v0.42.0 (fixes GO-2026-5970 infinite loop on invalid input)
+- [BUGFIX] Add a 30s dial timeout to `--upstream-force-h2c` upstream connections (previously none); TCP keep-alive now starts after 30s instead of 15s
+- [BUGFIX] Fix graceful shutdown hanging with `--proxy-endpoints-port` and HTTP/2 (secure-port connections never got GOAWAY); also fixes a startup panic when built with Go 1.27
+
 ## 0.22.1 / 2026-07-08
 
 - [ENHANCEMENT] Bump dependencies

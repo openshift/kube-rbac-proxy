@@ -41,12 +41,8 @@ func initTransport(upstreamCAPool *x509.CertPool, upstreamClientCertPath, upstre
 
 	// http.Transport sourced from go 1.10.7
 	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           newUpstreamDialer().DialContext,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
@@ -61,4 +57,13 @@ func initTransport(upstreamCAPool *x509.CertPool, upstreamClientCertPath, upstre
 	}
 
 	return transport, nil
+}
+
+// newUpstreamDialer returns the dialer settings of http.DefaultTransport,
+// which initTransport uses as is when no upstream CA is set.
+func newUpstreamDialer() *net.Dialer {
+	return &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
 }

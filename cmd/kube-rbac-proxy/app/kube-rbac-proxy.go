@@ -135,8 +135,8 @@ type completedProxyRunOptions struct {
 	upstreamForceH2C bool
 	upstreamCABundle *x509.CertPool
 
-	http2Disable bool
-	http2Options *http2.Server
+	http2Disable   bool
+	newHTTP2Server func() *http2.Server
 
 	auth *proxy.Config
 	tls  *options.TLSConfig
@@ -205,12 +205,14 @@ func Complete(o *options.ProxyRunOptions) (*completedProxyRunOptions, error) {
 	}
 
 	completed.http2Disable = o.HTTP2Disable
-	completed.http2Options = &http2.Server{
-		IdleTimeout:                  90 * time.Second,
-		MaxConcurrentStreams:         o.HTTP2MaxConcurrentStreams,
-		MaxReadFrameSize:             o.HTTP2MaxSize,
-		MaxUploadBufferPerStream:     int32(o.HTTP2MaxSize),
-		MaxUploadBufferPerConnection: int32(o.HTTP2MaxSize) * int32(o.HTTP2MaxConcurrentStreams),
+	completed.newHTTP2Server = func() *http2.Server {
+		return &http2.Server{
+			IdleTimeout:                  90 * time.Second,
+			MaxConcurrentStreams:         o.HTTP2MaxConcurrentStreams,
+			MaxReadFrameSize:             o.HTTP2MaxSize,
+			MaxUploadBufferPerStream:     int32(o.HTTP2MaxSize),
+			MaxUploadBufferPerConnection: int32(o.HTTP2MaxSize) * int32(o.HTTP2MaxConcurrentStreams),
+		}
 	}
 
 	return completed, nil
@@ -255,14 +257,17 @@ func Run(cfg *completedProxyRunOptions) error {
 		return fmt.Errorf("failed to create static authorizer: %w", err)
 	}
 
-	authorizer := union.New(
+	authorizer, err := union.New(
 		// prefix the authorizer with the permissions for metrics scraping which are well known.
 		// openshift RBAC policy will always allow this user to read metrics.
 		// TODO: remove this, once CMO lands static authorizer configuration.
-		hardcodedauthorizer.NewHardCodedMetricsAuthorizer(),
-		staticAuthorizer,
-		sarAuthorizer,
+		union.NamedAuthorizer{AuthorizerName: "hardcoded-metrics", Authorizer: hardcodedauthorizer.NewHardCodedMetricsAuthorizer()},
+		union.NamedAuthorizer{AuthorizerName: "static", Authorizer: staticAuthorizer},
+		union.NamedAuthorizer{AuthorizerName: "sar", Authorizer: sarAuthorizer},
 	)
+	if err != nil {
+		return fmt.Errorf("failed to create union authorizer: %w", err)
+	}
 
 	upstreamTransport, err := initTransport(cfg.upstreamCABundle, cfg.tls.UpstreamClientCertFile, cfg.tls.UpstreamClientKeyFile)
 	if err != nil {
@@ -281,8 +286,8 @@ func Run(cfg *completedProxyRunOptions) error {
 			AllowHTTP: true,
 			// Do disable TLS.
 			// In combination with the schema check above. We could enforce h2c against the upstream server
-			DialTLS: func(netw, addr string, cfg *tls.Config) (net.Conn, error) {
-				return net.Dial(netw, addr)
+			DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+				return newUpstreamDialer().DialContext(ctx, network, addr)
 			},
 		}
 	}
@@ -372,6 +377,14 @@ func Run(cfg *completedProxyRunOptions) error {
 				return fmt.Errorf("failed to convert TLS cipher suite name to ID: %w", err)
 			}
 
+			if len(cfg.tls.CurvePreferences) > 0 {
+				curvePreferences, err := k8sapiflag.TLSCurvePreferences(cfg.tls.CurvePreferences)
+				if err != nil {
+					return fmt.Errorf("failed to convert TLS curve preference to ID: %w", err)
+				}
+				srv.TLSConfig.CurvePreferences = curvePreferences
+			}
+
 			srv.TLSConfig.CipherSuites = cipherSuiteIDs
 			srv.TLSConfig.MinVersion = version
 			srv.TLSConfig.ClientAuth = tls.RequestClientCert
@@ -388,7 +401,7 @@ func Run(cfg *completedProxyRunOptions) error {
 				// https://github.com/kubernetes/kubernetes/blob/de054fbf9422d778568946de21a48c7330a6c1b7/staging/src/k8s.io/apiserver/pkg/server/secure_serving.go#L55-L59
 				srv.TLSConfig.NextProtos = []string{"http/1.1"}
 			} else {
-				if err := http2.ConfigureServer(srv, cfg.http2Options); err != nil {
+				if err := http2.ConfigureServer(srv, cfg.newHTTP2Server()); err != nil {
 					return fmt.Errorf("failed to configure http2 server: %w", err)
 				}
 			}
@@ -425,12 +438,12 @@ func Run(cfg *completedProxyRunOptions) error {
 					// Transport.TLSNextProto (for clients) or Server.TLSNextProto
 					// (for servers) to a non-nil, empty map.
 					// https://pkg.go.dev/net/http
-					srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
+					proxyEndpointsSrv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 					// For reference:
 					// https://github.com/kubernetes/kubernetes/blob/de054fbf9422d778568946de21a48c7330a6c1b7/staging/src/k8s.io/apiserver/pkg/server/secure_serving.go#L55-L59
-					srv.TLSConfig.NextProtos = []string{"http/1.1"}
+					proxyEndpointsSrv.TLSConfig.NextProtos = []string{"http/1.1"}
 				} else {
-					if err := http2.ConfigureServer(proxyEndpointsSrv, cfg.http2Options); err != nil {
+					if err := http2.ConfigureServer(proxyEndpointsSrv, cfg.newHTTP2Server()); err != nil {
 						return fmt.Errorf("failed to configure http2 server: %w", err)
 					}
 				}
@@ -450,7 +463,7 @@ func Run(cfg *completedProxyRunOptions) error {
 					defer proxyListener.Close()
 
 					klog.Infof("Listening securely on %v for proxy endpoints", endpointsAddr)
-					tlsListener := tls.NewListener(proxyListener, srv.TLSConfig)
+					tlsListener := tls.NewListener(proxyListener, proxyEndpointsSrv.TLSConfig)
 					return proxyEndpointsSrv.Serve(tlsListener)
 				}, func(err error) {
 					if err := proxyEndpointsSrv.Shutdown(context.Background()); err != nil {
@@ -466,7 +479,7 @@ func Run(cfg *completedProxyRunOptions) error {
 			if cfg.http2Disable {
 				srv.Handler = mux
 			} else {
-				srv.Handler = h2c.NewHandler(mux, cfg.http2Options) //nolint:staticcheck // see h2c import comment, #446
+				srv.Handler = h2c.NewHandler(mux, cfg.newHTTP2Server()) //nolint:staticcheck // see h2c import comment, #446
 			}
 
 			l, err := net.Listen("tcp", cfg.insecureListenAddress)

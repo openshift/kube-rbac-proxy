@@ -7,6 +7,7 @@ Release shepherds are chosen on a voluntary basis.
 
 | release series | date of release (year-month-day) | release shepherd                        |
 | -------------- | -------------------------------- | --------------------------------------- |
+| v0.23.0        | 2026-09-23                       | Krzysztof Ostrowski (GitHub: @ibihim)   |
 | v0.22.1        | 2026-07-08                       | Krzysztof Ostrowski (GitHub: @ibihim)   |
 | v0.22.0        | 2026-04-27                       | Sergiusz Urbaniak (GitHub: @s-urbaniak) |
 | v0.21.2        | 2026-03-19                       | Krzysztof Ostrowski (GitHub: @ibihim)   |
@@ -131,7 +132,7 @@ Submit a PR against the master branch titled "\*: cut vx.y.z release ".
 Tag the new release via the following commands:
 
 ```bash
-tag="v$(< VERSION)"
+tag="$(< VERSION)"
 git tag -s "${tag}" -m "${tag}"
 git push origin "${tag}"
 ```
@@ -140,7 +141,7 @@ Optionally, you can use this handy `.gitconfig` alias.
 
 ```ini
 [alias]
-  tag-release = "!f() { tag=v${1:-$(cat VERSION)} ; git tag -s ${tag} -m ${tag} && git push origin ${tag}; }; f"
+  tag-release = "!f() { tag=${1:-$(cat VERSION)} ; git tag -s ${tag} -m ${tag} && git push origin ${tag}; }; f"
 ```
 
 Then release with `git tag-release`.

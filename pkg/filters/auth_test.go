@@ -154,7 +154,7 @@ func TestWithAuthorization(t *testing.T) {
 		{
 			name: "should fail with error on authorization",
 			req:  userRequest,
-			authz: authorizerFunc(func(ctx context.Context, attr authorizer.Attributes) (authorizer.Decision, string, error) {
+			authz: authorizer.AuthorizerFunc(func(ctx context.Context, attr authorizer.Attributes) (authorizer.Decision, string, error) {
 				return authorizer.DecisionDeny, "there is an error", errors.New("this is an error")
 			}),
 			cfg:    &authz.Config{},
@@ -163,7 +163,7 @@ func TestWithAuthorization(t *testing.T) {
 		{
 			name: "should fail with authorization failure",
 			req:  userRequest,
-			authz: authorizerFunc(func(ctx context.Context, attr authorizer.Attributes) (authorizer.Decision, string, error) {
+			authz: authorizer.AuthorizerFunc(func(ctx context.Context, attr authorizer.Attributes) (authorizer.Decision, string, error) {
 				return authorizer.DecisionDeny, "not authorized", nil
 			}),
 			cfg:    &authz.Config{},
@@ -172,7 +172,7 @@ func TestWithAuthorization(t *testing.T) {
 		{
 			name: "should succeed with authorization",
 			req:  userRequest,
-			authz: authorizerFunc(func(ctx context.Context, attr authorizer.Attributes) (authorizer.Decision, string, error) {
+			authz: authorizer.AuthorizerFunc(func(ctx context.Context, attr authorizer.Attributes) (authorizer.Decision, string, error) {
 				return authorizer.DecisionAllow, "authorized!", nil
 			}),
 			cfg:    &authz.Config{},
@@ -194,12 +194,6 @@ func TestWithAuthorization(t *testing.T) {
 			}
 		})
 	}
-}
-
-type authorizerFunc func(context.Context, authorizer.Attributes) (authorizer.Decision, string, error)
-
-func (a authorizerFunc) Authorize(ctx context.Context, attr authorizer.Attributes) (authorizer.Decision, string, error) {
-	return a(ctx, attr)
 }
 
 func TestWithAuthHeaders(t *testing.T) {
@@ -290,7 +284,7 @@ func TestProxyWithOIDCSupport(t *testing.T) {
 			description: "Request with invalid Token should be authenticated and rejected with 401",
 			given: given{
 				req:        fakeJWTRequest("GET", "/accounts", "Bearer INVALID"),
-				authorizer: denier{},
+				authorizer: fakeAuthorizer(authorizer.DecisionDeny),
 			},
 			expected: expected{
 				status: http.StatusUnauthorized,
@@ -300,7 +294,7 @@ func TestProxyWithOIDCSupport(t *testing.T) {
 			description: "Request with valid token should return 403 due to lack of permissions",
 			given: given{
 				req:        fakeJWTRequest("GET", "/accounts", "Bearer VALID"),
-				authorizer: denier{},
+				authorizer: fakeAuthorizer(authorizer.DecisionDeny),
 			},
 			expected: expected{
 				status: http.StatusForbidden,
@@ -310,7 +304,7 @@ func TestProxyWithOIDCSupport(t *testing.T) {
 			description: "Request with valid token, should return 200 due to lack of permissions",
 			given: given{
 				req:        fakeJWTRequest("GET", "/accounts", "Bearer VALID"),
-				authorizer: approver{},
+				authorizer: fakeAuthorizer(authorizer.DecisionAllow),
 			},
 			expected: expected{
 				status:     http.StatusOK,
@@ -366,16 +360,10 @@ func fakeOIDCAuthenticator(t *testing.T, fakeUser *user.DefaultInfo) authenticat
 	return auth
 }
 
-type denier struct{}
-
-func (d denier) Authorize(ctx context.Context, auth authorizer.Attributes) (authorized authorizer.Decision, reason string, err error) {
-	return authorizer.DecisionDeny, "user not allowed", nil
-}
-
-type approver struct{}
-
-func (a approver) Authorize(ctx context.Context, auth authorizer.Attributes) (authorized authorizer.Decision, reason string, err error) {
-	return authorizer.DecisionAllow, "user allowed", nil
+func fakeAuthorizer(decision authorizer.Decision) authorizer.Authorizer {
+	return authorizer.AuthorizerFunc(func(ctx context.Context, attr authorizer.Attributes) (authorizer.Decision, string, error) {
+		return decision, "", nil
+	})
 }
 
 type given struct {
