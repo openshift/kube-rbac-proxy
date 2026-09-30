@@ -170,6 +170,13 @@ When modifying these components:
 2. Include working manifests and a README explaining the use case
 3. Run `make generate` to update root README with example links
 
+### Merging an Upstream Release
+
+To bring a released upstream version into this fork, follow the runbook in
+[DOWNSTREAM_UPSTREAM_MERGE.md](DOWNSTREAM_UPSTREAM_MERGE.md) step by step.
+It ends with you opening a PR. Never comment `/lgtm`, `/approve` or
+`/verified`: humans decide.
+
 ## Kubernetes API Integration
 
 This project uses Kubernetes client libraries heavily:
@@ -186,4 +193,5 @@ When updating Kubernetes dependencies (`make update-go-deps`), test thoroughly -
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution process
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Design decisions and tradeoffs
 - [RELEASE.md](RELEASE.md) - Release process
+- [DOWNSTREAM_UPSTREAM_MERGE.md](DOWNSTREAM_UPSTREAM_MERGE.md) - Merging an upstream release into this fork
 - [examples/](examples/) - Working configuration examples

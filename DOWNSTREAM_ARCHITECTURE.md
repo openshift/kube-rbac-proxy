@@ -239,7 +239,7 @@ flowchart TD
 
 ### Upstream Project Direction
 
-**Note**: The upstream kube-rbac-proxy project (brancz/kube-rbac-proxy) is working toward becoming an official Kubernetes project under SIG Auth. This OpenShift fork tracks relevant upstream changes while maintaining OpenShift-specific requirements.
+**Note**: The upstream kube-rbac-proxy project (kube-rbac-proxy/kube-rbac-proxy) is working toward becoming an official Kubernetes project under SIG Auth. This OpenShift fork tracks relevant upstream changes while maintaining OpenShift-specific requirements.
 
 Upstream changes being tracked:
 - **Removing insecure modes**: Deprecating `--insecure-listen-address` and similar flags

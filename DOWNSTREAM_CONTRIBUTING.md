@@ -4,9 +4,9 @@ Thank you for your interest in contributing to the OpenShift fork of kube-rbac-p
 
 ## OpenShift Fork Context
 
-This repository is the OpenShift downstream fork of kube-rbac-proxy, maintained for use in OpenShift clusters. We sync changes from the upstream brancz/kube-rbac-proxy project while maintaining OpenShift-specific requirements and integrations.
+This repository is the OpenShift downstream fork of kube-rbac-proxy, maintained for use in OpenShift clusters. We sync changes from the upstream kube-rbac-proxy/kube-rbac-proxy project while maintaining OpenShift-specific requirements and integrations.
 
-**Upstream-first approach**: If a change can be made in the upstream project (brancz/kube-rbac-proxy), it should be submitted there first and then cherry-picked into this fork. Only downstream-specific work — for example, a customer request that provides no upstream benefit, or an OpenShift-specific integration — should be contributed directly to this repository. See [Syncing from Upstream](#syncing-from-upstream) for the full workflow.
+**Upstream-first approach**: If a change can be made in the upstream project (kube-rbac-proxy/kube-rbac-proxy), it should be submitted there first and then cherry-picked into this fork. Only downstream-specific work — for example, a customer request that provides no upstream benefit, or an OpenShift-specific integration — should be contributed directly to this repository. See [Syncing from Upstream](#syncing-from-upstream) for the full workflow.
 
 ## Getting Started
 
@@ -25,12 +25,12 @@ This repository is the OpenShift downstream fork of kube-rbac-proxy, maintained 
    cd kube-rbac-proxy
    ```
 
-2. Add the remotes so you have the full chain — your fork → `upstream` (this OpenShift repository) → `original` (the brancz project this fork is based on):
+2. Add the remotes so you have the full chain — `origin` (your fork) → `downstream` (this OpenShift repository) → `upstream` (the kube-rbac-proxy project this fork is based on):
    ```bash
-   # upstream: the OpenShift downstream fork (this repository)
-   git remote add upstream https://github.com/openshift/kube-rbac-proxy.git
-   # original: the upstream brancz project this fork tracks
-   git remote add original https://github.com/brancz/kube-rbac-proxy.git
+   # downstream: the OpenShift fork (this repository)
+   git remote add downstream https://github.com/openshift/kube-rbac-proxy.git
+   # upstream: the kube-rbac-proxy project this fork tracks
+   git remote add upstream https://github.com/kube-rbac-proxy/kube-rbac-proxy.git
    ```
 
 3. Build the project:
@@ -194,15 +194,10 @@ Downstream syncs themselves land through dedicated merge branches (e.g.,
 
 ### Syncing from Upstream
 
-The Control Plane team periodically syncs changes from upstream (brancz/kube-rbac-proxy). The process:
-
-1. **Upstream tracking**: Monitor upstream releases and relevant PRs
-2. **Cherry-pick or merge**: Bring in upstream changes, resolving conflicts with OpenShift-specific patches
-3. **Testing**: Run full test suite to ensure upstream changes work with OpenShift
-4. **Documentation**: Update CHANGELOG.md noting upstream version synced
+The Control Plane team periodically merges upstream (kube-rbac-proxy/kube-rbac-proxy) releases into this fork, following [DOWNSTREAM_UPSTREAM_MERGE.md](DOWNSTREAM_UPSTREAM_MERGE.md). Merge the release tag rather than cherry-picking its commits, and leave CHANGELOG.md as upstream wrote it.
 
 **For contributors**: If you're implementing a feature that would benefit upstream, consider:
-1. Submitting the change to upstream first (brancz/kube-rbac-proxy)
+1. Submitting the change to upstream first (kube-rbac-proxy/kube-rbac-proxy)
 2. Once merged upstream, sync it to the OpenShift fork
 3. Keep any OpenShift-specific modifications as separate, clearly described commits
 
