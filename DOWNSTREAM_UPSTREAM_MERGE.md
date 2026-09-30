@@ -70,7 +70,7 @@ vendor: bump                                         # only if Step 5 changes ve
 ## Step 0: Preconditions
 
 ```bash
-FORK=ibihim/kube-rbac-proxy   # your fork
+FORK=ibihim/kube-rbac-proxy   # your fork, as <owner>/<repo>
 
 git status --porcelain   # must print nothing
 gh auth status           # must show you logged in
@@ -103,7 +103,13 @@ PREV_TAG=$(git log -1 --merges --format=%s --grep="Merge tag 'v" downstream/mast
 TAG=${TAG:-$(gh release list --repo kube-rbac-proxy/kube-rbac-proxy --exclude-drafts \
   --exclude-pre-releases --limit 50 --json tagName --jq '.[].tagName' | sort -V | tail -1)}
 echo "PREV_TAG=$PREV_TAG TAG=$TAG"
+
+# Both must be release tags; anything else means a lookup failed
+[[ $PREV_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ && $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] && echo ok
 ```
+
+If that does not print `ok`, report both values and end the run, even when
+a loop started you: an empty `TAG` would pass the next check as "done".
 
 End the run here if `TAG` is done or in progress:
 
@@ -504,15 +510,16 @@ git push -u fork "merge-${TAG}-downstream" &&
   PR_URL=$(gh pr create --repo openshift/kube-rbac-proxy --base master \
     --head "${FORK%%/*}:merge-${TAG}-downstream" \
     --title "NO-JIRA: Merge upstream ${TAG}" --body-file "$GD/pr-body.md") &&
-  gh pr comment "$PR_URL" --body '/pipeline auto' &&
-  echo "$PR_URL"
+  echo "$PR_URL" &&
+  gh pr comment "$PR_URL" --body '/pipeline auto'
 ```
 
 - `NO-JIRA:` gives the PR the `jira/valid-reference` label, which it needs to
   merge. Upstream merges have no Jira ticket.
 - `/pipeline auto` starts `ci/prow/e2e-aws-ovn` as soon as the first-stage
   jobs pass, and again after every push. Without it, e2e waits for `/lgtm`,
-  and check-in 2 has no e2e result to read.
+  and check-in 2 has no e2e result to read. If only this comment failed,
+  post it again: the PR exists.
 
 The run ends here. A human reviews the PR.
 
@@ -521,8 +528,9 @@ To merge, the PR needs:
 - Passing `ci/prow/images`, `ci/prow/okd-scos-images`, `ci/prow/test-unit`,
   `ci/prow/vendor`, `ci/prow/verify-deps` and `ci/prow/e2e-aws-ovn`.
 - The labels `lgtm` and `approved` (from [OWNERS](OWNERS)),
-  `jira/valid-reference`, and `verified`: a human comments `/verified by ci`
-  once e2e-aws-ovn passed.
+  `jira/valid-reference`, and `verified`: once e2e-aws-ovn passed, a human
+  comments `/verified by <how>`, e.g. `/verified by ci` (#146) or
+  `/verified by e2e-aws-ovn,test-unit` (#162).
 
 ## After the PR
 
@@ -629,5 +637,5 @@ and append `/build-log.txt`.
 | `make test-local` fails before any test runs | No Docker or `kind` | Status line: `not run`; warning-box entry |
 | `ci/prow/vendor` or `ci/prow/verify-deps` fails | `vendor/` is out of sync with `go.mod` | Repeat Step 5 |
 | PR lacks `jira/valid-reference` | The title lost its `NO-JIRA:` prefix | Retitle |
-| PR has `lgtm` and `approved` but does not merge | `verified` is missing | A human comments `/verified by ci` |
+| PR has `lgtm` and `approved` but does not merge | `verified` is missing | A human comments `/verified by <how>` |
 | PR has `needs-rebase` | Downstream `master` changed files this PR changes | Don't rebase. A human decides; redo the run and force-push only when a human asks |
