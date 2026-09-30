@@ -36,12 +36,14 @@ The human reviewing the PR sees only the PR. So:
 Resulting commits:
 
 ```text
-Merge tag 'vX.Y.Z' into merge-vX.Y.Z-downstream     # conflicted files: upstream's version
-<re-apply the downstream change to one file>         # decision; one per conflicted file (Step 3)
+Merge tag 'vX.Y.Z' into merge-vX.Y.Z-downstream      # conflicted files: upstream's version
+<dir>: restore downstream change after conflict      # decision; only on conflict, one per file (Step 3)
 go.mod: align Go version with downstream builder     # only if Step 4 lowers the go line
 vendor: bump                                         # only if Step 5 changes vendor/
-<fix>                                                # decision; one per fix (Steps 4 and 6, check-ins)
+<fix for an upstream change>                         # decision; one per fix (Steps 4, 6, check-ins)
 ```
+
+`<dir>` is the directory of the conflicted file, e.g. `cmd/kube-rbac-proxy/app`.
 
 ## Background
 
@@ -62,8 +64,11 @@ vendor: bump                                         # only if Step 5 changes ve
   `test/e2e/hardcoded_authorizer.go`, runs in no downstream CI job
   (`e2e-aws-ovn` runs OpenShift's conformance suite), so Step 6 runs it in kind.
 - You need `git`, `go` (any version; `GOTOOLCHAIN` fetches the right one),
-  `make`, `gh` logged in with push access to `FORK`, and Docker with `kind`.
-  Work in a fresh clone.
+  `make`, and `gh` logged in with push access to `FORK`. Work in a fresh clone.
+- A container runtime that can run `kind` is strongly preferred. Downstream CI
+  never runs `test/e2e`, so without it nothing runs those tests against the
+  merge or your changes. `make test-local` calls `docker` directly, so the
+  runtime must provide that command. Without one, Step 6's e2e check is `not run`.
 - Your shell may forget variables between commands. Step 1 saves them to a
   file, and every later step starts by sourcing it.
 
@@ -276,7 +281,7 @@ the code around it, adapt it the way upstream adapted its own code. Then
 commit it on its own:
 
 ```bash
-git add <file> && git commit -s -m '<dir>: re-apply downstream change after vX.Y.Z'
+git add <file> && git commit -s -m '<dir>: restore downstream change after conflict'
 ```
 
 Warning-box entry: the commit, what upstream changed, and each line you had to
