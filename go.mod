@@ -108,6 +108,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace gopkg.in/square/go-jose.v2 => github.com/go-jose/go-jose v2.6.3+incompatible
-
-replace golang.org/x/net => github.com/openshift-sustaining/net v0.43.0-sec.4
+replace (
+	golang.org/x/net => github.com/openshift-sustaining/net v0.43.0-sec.4
+	gopkg.in/square/go-jose.v2 => github.com/go-jose/go-jose v2.6.3+incompatible
+)

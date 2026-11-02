@@ -1221,5 +1221,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
-# gopkg.in/square/go-jose.v2 => github.com/go-jose/go-jose v2.6.3+incompatible
 # golang.org/x/net => github.com/openshift-sustaining/net v0.43.0-sec.4
+# gopkg.in/square/go-jose.v2 => github.com/go-jose/go-jose v2.6.3+incompatible
